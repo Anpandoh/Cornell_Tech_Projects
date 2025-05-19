@@ -1,0 +1,9 @@
+{
+    "files.associations": {
+        "test_conv.h": "c",
+        "test_linear.h": "c",
+        "test_matrix_ops.h": "c",
+        "test_functional.h": "c",
+        "unity.h": "c"
+    }
+}

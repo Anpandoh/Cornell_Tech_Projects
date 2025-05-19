@@ -1,0 +1,50 @@
+
+# Iteration 1
+
+Area,Value,Unit,Description,Sample,Stddev,Multiplex,Bottleneck,Idle
+Frontend_Bound,18.3,% Slots,,frontend_retired.latency_ge_4,0.0,100.0,,
+Bad_Speculation,4.8,% Slots <,,,0.0,100.0,,
+Backend_Bound,56.5,% Slots,,topdown.backend_bound_slots,0.0,100.0,<==,
+Retiring,20.5,% Slots <,,uops_retired.slots,0.0,100.0,,
+MUX,100.0,%,,,0.0,100.0,,
+# 4.8-full-perf on INTEL(R) XEON(R) SILVER 4514Y [spr/sapphire_rapids]
+
+# Iteration 2
+
+Area,Value,Unit,Description,Sample,Stddev,Multiplex,Bottleneck,Idle
+Frontend_Bound,18.6,% Slots,,frontend_retired.latency_ge_4,0.0,100.0,,
+Bad_Speculation,4.8,% Slots <,,,0.0,100.0,,
+Backend_Bound,56.1,% Slots,,topdown.backend_bound_slots,0.0,100.0,<==,
+Retiring,20.5,% Slots <,,uops_retired.slots,0.0,100.0,,
+MUX,100.0,%,,,0.0,100.0,,
+# 4.8-full-perf on INTEL(R) XEON(R) SILVER 4514Y [spr/sapphire_rapids]
+
+# Iteration 3
+
+Area,Value,Unit,Description,Sample,Stddev,Multiplex,Bottleneck,Idle
+Frontend_Bound,19.4,% Slots,,frontend_retired.latency_ge_4,0.0,100.0,,
+Bad_Speculation,5.1,% Slots <,,,0.0,100.0,,
+Backend_Bound,54.3,% Slots,,topdown.backend_bound_slots,0.0,100.0,<==,
+Retiring,21.2,% Slots <,,uops_retired.slots,0.0,100.0,,
+MUX,100.0,%,,,0.0,100.0,,
+# 4.8-full-perf on INTEL(R) XEON(R) SILVER 4514Y [spr/sapphire_rapids]
+
+# Iteration 4
+
+Area,Value,Unit,Description,Sample,Stddev,Multiplex,Bottleneck,Idle
+Frontend_Bound,18.8,% Slots,,frontend_retired.latency_ge_4,0.0,100.0,,
+Bad_Speculation,4.9,% Slots <,,,0.0,100.0,,
+Backend_Bound,55.3,% Slots,,topdown.backend_bound_slots,0.0,100.0,<==,
+Retiring,21.1,% Slots <,,uops_retired.slots,0.0,100.0,,
+MUX,100.0,%,,,0.0,100.0,,
+# 4.8-full-perf on INTEL(R) XEON(R) SILVER 4514Y [spr/sapphire_rapids]
+
+# Iteration 5
+
+Area,Value,Unit,Description,Sample,Stddev,Multiplex,Bottleneck,Idle
+Frontend_Bound,22.9,% Slots,,frontend_retired.latency_ge_4,0.0,100.0,,
+Bad_Speculation,7.2,% Slots <,,,0.0,100.0,,
+Backend_Bound,48.5,% Slots,,topdown.backend_bound_slots,0.0,100.0,<==,
+Retiring,21.3,% Slots <,,uops_retired.slots,0.0,100.0,,
+MUX,100.0,%,,,0.0,100.0,,
+# 4.8-full-perf on INTEL(R) XEON(R) SILVER 4514Y [spr/sapphire_rapids]

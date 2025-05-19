@@ -1,0 +1,306 @@
+        -:    0:Source:/usr/lib/gcc/x86_64-linux-gnu/13/include/fmaintrin.h
+        -:    0:Graph:gpt2.gcno
+        -:    0:Data:gpt2.gcda
+        -:    0:Runs:1
+        -:    1:/* Copyright (C) 2011-2023 Free Software Foundation, Inc.
+        -:    2:
+        -:    3:   This file is part of GCC.
+        -:    4:
+        -:    5:   GCC is free software; you can redistribute it and/or modify
+        -:    6:   it under the terms of the GNU General Public License as published by
+        -:    7:   the Free Software Foundation; either version 3, or (at your option)
+        -:    8:   any later version.
+        -:    9:
+        -:   10:   GCC is distributed in the hope that it will be useful,
+        -:   11:   but WITHOUT ANY WARRANTY; without even the implied warranty of
+        -:   12:   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+        -:   13:   GNU General Public License for more details.
+        -:   14:
+        -:   15:   Under Section 7 of GPL version 3, you are granted additional
+        -:   16:   permissions described in the GCC Runtime Library Exception, version
+        -:   17:   3.1, as published by the Free Software Foundation.
+        -:   18:
+        -:   19:   You should have received a copy of the GNU General Public License and
+        -:   20:   a copy of the GCC Runtime Library Exception along with this program;
+        -:   21:   see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
+        -:   22:   <http://www.gnu.org/licenses/>.  */
+        -:   23:
+        -:   24:#ifndef _IMMINTRIN_H_INCLUDED
+        -:   25:# error "Never use <fmaintrin.h> directly; include <immintrin.h> instead."
+        -:   26:#endif
+        -:   27:
+        -:   28:#ifndef _FMAINTRIN_H_INCLUDED
+        -:   29:#define _FMAINTRIN_H_INCLUDED
+        -:   30:
+        -:   31:#ifndef __FMA__
+        -:   32:#pragma GCC push_options
+        -:   33:#pragma GCC target("fma")
+        -:   34:#define __DISABLE_FMA__
+        -:   35:#endif /* __FMA__ */
+        -:   36:
+        -:   37:extern __inline __m128d
+        -:   38:__attribute__((__gnu_inline__, __always_inline__, __artificial__))
+        -:   39:_mm_fmadd_pd (__m128d __A, __m128d __B, __m128d __C)
+        -:   40:{
+        -:   41:  return (__m128d)__builtin_ia32_vfmaddpd ((__v2df)__A, (__v2df)__B,
+        -:   42:                                           (__v2df)__C);
+        -:   43:}
+        -:   44:
+        -:   45:extern __inline __m256d
+        -:   46:__attribute__((__gnu_inline__, __always_inline__, __artificial__))
+        -:   47:_mm256_fmadd_pd (__m256d __A, __m256d __B, __m256d __C)
+        -:   48:{
+        -:   49:  return (__m256d)__builtin_ia32_vfmaddpd256 ((__v4df)__A, (__v4df)__B,
+        -:   50:                                              (__v4df)__C);
+        -:   51:}
+        -:   52:
+        -:   53:extern __inline __m128
+        -:   54:__attribute__((__gnu_inline__, __always_inline__, __artificial__))
+        -:   55:_mm_fmadd_ps (__m128 __A, __m128 __B, __m128 __C)
+        -:   56:{
+        -:   57:  return (__m128)__builtin_ia32_vfmaddps ((__v4sf)__A, (__v4sf)__B,
+        -:   58:                                          (__v4sf)__C);
+        -:   59:}
+        -:   60:
+        -:   61:extern __inline __m256
+        -:   62:__attribute__((__gnu_inline__, __always_inline__, __artificial__))
+ 53485152:   63:_mm256_fmadd_ps (__m256 __A, __m256 __B, __m256 __C)
+        -:   64:{
+ 53485152:   65:  return (__m256)__builtin_ia32_vfmaddps256 ((__v8sf)__A, (__v8sf)__B,
+        -:   66:                                             (__v8sf)__C);
+        -:   67:}
+        -:   68:
+        -:   69:extern __inline __m128d
+        -:   70:__attribute__((__gnu_inline__, __always_inline__, __artificial__))
+        -:   71:_mm_fmadd_sd (__m128d __A, __m128d __B, __m128d __C)
+        -:   72:{
+        -:   73:  return (__m128d) __builtin_ia32_vfmaddsd3 ((__v2df)__A, (__v2df)__B,
+        -:   74:                                             (__v2df)__C);
+        -:   75:}
+        -:   76:
+        -:   77:extern __inline __m128
+        -:   78:__attribute__((__gnu_inline__, __always_inline__, __artificial__))
+        -:   79:_mm_fmadd_ss (__m128 __A, __m128 __B, __m128 __C)
+        -:   80:{
+        -:   81:  return (__m128) __builtin_ia32_vfmaddss3 ((__v4sf)__A, (__v4sf)__B,
+        -:   82:                                            (__v4sf)__C);
+        -:   83:}
+        -:   84:
+        -:   85:extern __inline __m128d
+        -:   86:__attribute__((__gnu_inline__, __always_inline__, __artificial__))
+        -:   87:_mm_fmsub_pd (__m128d __A, __m128d __B, __m128d __C)
+        -:   88:{
+        -:   89:  return (__m128d)__builtin_ia32_vfmsubpd ((__v2df)__A, (__v2df)__B,
+        -:   90:                                           (__v2df)__C);
+        -:   91:}
+        -:   92:
+        -:   93:extern __inline __m256d
+        -:   94:__attribute__((__gnu_inline__, __always_inline__, __artificial__))
+        -:   95:_mm256_fmsub_pd (__m256d __A, __m256d __B, __m256d __C)
+        -:   96:{
+        -:   97:  return (__m256d)__builtin_ia32_vfmsubpd256 ((__v4df)__A, (__v4df)__B,
+        -:   98:                                              (__v4df)__C);
+        -:   99:}
+        -:  100:
+        -:  101:extern __inline __m128
+        -:  102:__attribute__((__gnu_inline__, __always_inline__, __artificial__))
+        -:  103:_mm_fmsub_ps (__m128 __A, __m128 __B, __m128 __C)
+        -:  104:{
+        -:  105:  return (__m128)__builtin_ia32_vfmsubps ((__v4sf)__A, (__v4sf)__B,
+        -:  106:                                          (__v4sf)__C);
+        -:  107:}
+        -:  108:
+        -:  109:extern __inline __m256
+        -:  110:__attribute__((__gnu_inline__, __always_inline__, __artificial__))
+        -:  111:_mm256_fmsub_ps (__m256 __A, __m256 __B, __m256 __C)
+        -:  112:{
+        -:  113:  return (__m256)__builtin_ia32_vfmsubps256 ((__v8sf)__A, (__v8sf)__B,
+        -:  114:                                             (__v8sf)__C);
+        -:  115:}
+        -:  116:
+        -:  117:extern __inline __m128d
+        -:  118:__attribute__((__gnu_inline__, __always_inline__, __artificial__))
+        -:  119:_mm_fmsub_sd (__m128d __A, __m128d __B, __m128d __C)
+        -:  120:{
+        -:  121:  return (__m128d)__builtin_ia32_vfmsubsd3 ((__v2df)__A, (__v2df)__B,
+        -:  122:                                            (__v2df)__C);
+        -:  123:}
+        -:  124:
+        -:  125:extern __inline __m128
+        -:  126:__attribute__((__gnu_inline__, __always_inline__, __artificial__))
+        -:  127:_mm_fmsub_ss (__m128 __A, __m128 __B, __m128 __C)
+        -:  128:{
+        -:  129:  return (__m128)__builtin_ia32_vfmsubss3 ((__v4sf)__A, (__v4sf)__B,
+        -:  130:                                           (__v4sf)__C);
+        -:  131:}
+        -:  132:
+        -:  133:extern __inline __m128d
+        -:  134:__attribute__((__gnu_inline__, __always_inline__, __artificial__))
+        -:  135:_mm_fnmadd_pd (__m128d __A, __m128d __B, __m128d __C)
+        -:  136:{
+        -:  137:  return (__m128d)__builtin_ia32_vfnmaddpd ((__v2df)__A, (__v2df)__B,
+        -:  138:					    (__v2df)__C);
+        -:  139:}
+        -:  140:
+        -:  141:extern __inline __m256d
+        -:  142:__attribute__((__gnu_inline__, __always_inline__, __artificial__))
+        -:  143:_mm256_fnmadd_pd (__m256d __A, __m256d __B, __m256d __C)
+        -:  144:{
+        -:  145:  return (__m256d)__builtin_ia32_vfnmaddpd256 ((__v4df)__A, (__v4df)__B,
+        -:  146:					       (__v4df)__C);
+        -:  147:}
+        -:  148:
+        -:  149:extern __inline __m128
+        -:  150:__attribute__((__gnu_inline__, __always_inline__, __artificial__))
+        -:  151:_mm_fnmadd_ps (__m128 __A, __m128 __B, __m128 __C)
+        -:  152:{
+        -:  153:  return (__m128)__builtin_ia32_vfnmaddps ((__v4sf)__A, (__v4sf)__B,
+        -:  154:					   (__v4sf)__C);
+        -:  155:}
+        -:  156:
+        -:  157:extern __inline __m256
+        -:  158:__attribute__((__gnu_inline__, __always_inline__, __artificial__))
+        -:  159:_mm256_fnmadd_ps (__m256 __A, __m256 __B, __m256 __C)
+        -:  160:{
+        -:  161:  return (__m256)__builtin_ia32_vfnmaddps256 ((__v8sf)__A, (__v8sf)__B,
+        -:  162:					      (__v8sf)__C);
+        -:  163:}
+        -:  164:
+        -:  165:extern __inline __m128d
+        -:  166:__attribute__((__gnu_inline__, __always_inline__, __artificial__))
+        -:  167:_mm_fnmadd_sd (__m128d __A, __m128d __B, __m128d __C)
+        -:  168:{
+        -:  169:  return (__m128d)__builtin_ia32_vfnmaddsd3 ((__v2df)__A, (__v2df)__B,
+        -:  170:					     (__v2df)__C);
+        -:  171:}
+        -:  172:
+        -:  173:extern __inline __m128
+        -:  174:__attribute__((__gnu_inline__, __always_inline__, __artificial__))
+        -:  175:_mm_fnmadd_ss (__m128 __A, __m128 __B, __m128 __C)
+        -:  176:{
+        -:  177:  return (__m128)__builtin_ia32_vfnmaddss3 ((__v4sf)__A, (__v4sf)__B,
+        -:  178:					    (__v4sf)__C);
+        -:  179:}
+        -:  180:
+        -:  181:extern __inline __m128d
+        -:  182:__attribute__((__gnu_inline__, __always_inline__, __artificial__))
+        -:  183:_mm_fnmsub_pd (__m128d __A, __m128d __B, __m128d __C)
+        -:  184:{
+        -:  185:  return (__m128d)__builtin_ia32_vfnmsubpd ((__v2df)__A, (__v2df)__B,
+        -:  186:					    (__v2df)__C);
+        -:  187:}
+        -:  188:
+        -:  189:extern __inline __m256d
+        -:  190:__attribute__((__gnu_inline__, __always_inline__, __artificial__))
+        -:  191:_mm256_fnmsub_pd (__m256d __A, __m256d __B, __m256d __C)
+        -:  192:{
+        -:  193:  return (__m256d)__builtin_ia32_vfnmsubpd256 ((__v4df)__A, (__v4df)__B,
+        -:  194:					       (__v4df)__C);
+        -:  195:}
+        -:  196:
+        -:  197:extern __inline __m128
+        -:  198:__attribute__((__gnu_inline__, __always_inline__, __artificial__))
+        -:  199:_mm_fnmsub_ps (__m128 __A, __m128 __B, __m128 __C)
+        -:  200:{
+        -:  201:  return (__m128)__builtin_ia32_vfnmsubps ((__v4sf)__A, (__v4sf)__B,
+        -:  202:					   (__v4sf)__C);
+        -:  203:}
+        -:  204:
+        -:  205:extern __inline __m256
+        -:  206:__attribute__((__gnu_inline__, __always_inline__, __artificial__))
+        -:  207:_mm256_fnmsub_ps (__m256 __A, __m256 __B, __m256 __C)
+        -:  208:{
+        -:  209:  return (__m256)__builtin_ia32_vfnmsubps256 ((__v8sf)__A, (__v8sf)__B,
+        -:  210:					      (__v8sf)__C);
+        -:  211:}
+        -:  212:
+        -:  213:extern __inline __m128d
+        -:  214:__attribute__((__gnu_inline__, __always_inline__, __artificial__))
+        -:  215:_mm_fnmsub_sd (__m128d __A, __m128d __B, __m128d __C)
+        -:  216:{
+        -:  217:  return (__m128d)__builtin_ia32_vfnmsubsd3 ((__v2df)__A, (__v2df)__B,
+        -:  218:					     (__v2df)__C);
+        -:  219:}
+        -:  220:
+        -:  221:extern __inline __m128
+        -:  222:__attribute__((__gnu_inline__, __always_inline__, __artificial__))
+        -:  223:_mm_fnmsub_ss (__m128 __A, __m128 __B, __m128 __C)
+        -:  224:{
+        -:  225:  return (__m128)__builtin_ia32_vfnmsubss3 ((__v4sf)__A, (__v4sf)__B,
+        -:  226:					    (__v4sf)__C);
+        -:  227:}
+        -:  228:
+        -:  229:extern __inline __m128d
+        -:  230:__attribute__((__gnu_inline__, __always_inline__, __artificial__))
+        -:  231:_mm_fmaddsub_pd (__m128d __A, __m128d __B, __m128d __C)
+        -:  232:{
+        -:  233:  return (__m128d)__builtin_ia32_vfmaddsubpd ((__v2df)__A, (__v2df)__B,
+        -:  234:                                              (__v2df)__C);
+        -:  235:}
+        -:  236:
+        -:  237:extern __inline __m256d
+        -:  238:__attribute__((__gnu_inline__, __always_inline__, __artificial__))
+        -:  239:_mm256_fmaddsub_pd (__m256d __A, __m256d __B, __m256d __C)
+        -:  240:{
+        -:  241:  return (__m256d)__builtin_ia32_vfmaddsubpd256 ((__v4df)__A,
+        -:  242:                                                 (__v4df)__B,
+        -:  243:                                                 (__v4df)__C);
+        -:  244:}
+        -:  245:
+        -:  246:extern __inline __m128
+        -:  247:__attribute__((__gnu_inline__, __always_inline__, __artificial__))
+        -:  248:_mm_fmaddsub_ps (__m128 __A, __m128 __B, __m128 __C)
+        -:  249:{
+        -:  250:  return (__m128)__builtin_ia32_vfmaddsubps ((__v4sf)__A, (__v4sf)__B,
+        -:  251:                                             (__v4sf)__C);
+        -:  252:}
+        -:  253:
+        -:  254:extern __inline __m256
+        -:  255:__attribute__((__gnu_inline__, __always_inline__, __artificial__))
+        -:  256:_mm256_fmaddsub_ps (__m256 __A, __m256 __B, __m256 __C)
+        -:  257:{
+        -:  258:  return (__m256)__builtin_ia32_vfmaddsubps256 ((__v8sf)__A,
+        -:  259:                                                (__v8sf)__B,
+        -:  260:                                                (__v8sf)__C);
+        -:  261:}
+        -:  262:
+        -:  263:extern __inline __m128d
+        -:  264:__attribute__((__gnu_inline__, __always_inline__, __artificial__))
+        -:  265:_mm_fmsubadd_pd (__m128d __A, __m128d __B, __m128d __C)
+        -:  266:{
+        -:  267:  return (__m128d)__builtin_ia32_vfmaddsubpd ((__v2df)__A, (__v2df)__B,
+        -:  268:                                              -(__v2df)__C);
+        -:  269:}
+        -:  270:
+        -:  271:extern __inline __m256d
+        -:  272:__attribute__((__gnu_inline__, __always_inline__, __artificial__))
+        -:  273:_mm256_fmsubadd_pd (__m256d __A, __m256d __B, __m256d __C)
+        -:  274:{
+        -:  275:  return (__m256d)__builtin_ia32_vfmaddsubpd256 ((__v4df)__A,
+        -:  276:                                                 (__v4df)__B,
+        -:  277:                                                 -(__v4df)__C);
+        -:  278:}
+        -:  279:
+        -:  280:extern __inline __m128
+        -:  281:__attribute__((__gnu_inline__, __always_inline__, __artificial__))
+        -:  282:_mm_fmsubadd_ps (__m128 __A, __m128 __B, __m128 __C)
+        -:  283:{
+        -:  284:  return (__m128)__builtin_ia32_vfmaddsubps ((__v4sf)__A, (__v4sf)__B,
+        -:  285:                                             -(__v4sf)__C);
+        -:  286:}
+        -:  287:
+        -:  288:extern __inline __m256
+        -:  289:__attribute__((__gnu_inline__, __always_inline__, __artificial__))
+        -:  290:_mm256_fmsubadd_ps (__m256 __A, __m256 __B, __m256 __C)
+        -:  291:{
+        -:  292:  return (__m256)__builtin_ia32_vfmaddsubps256 ((__v8sf)__A,
+        -:  293:                                                (__v8sf)__B,
+        -:  294:                                                -(__v8sf)__C);
+        -:  295:}
+        -:  296:
+        -:  297:#ifdef __DISABLE_FMA__
+        -:  298:#undef __DISABLE_FMA__
+        -:  299:#pragma GCC pop_options
+        -:  300:#endif /* __DISABLE_FMA__ */
+        -:  301:
+        -:  302:#endif

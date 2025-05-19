@@ -1,0 +1,582 @@
+--------------------------------------------------------------------------------
+-- Metadata
+--------------------------------------------------------------------------------
+Invocation:       /usr/bin/cg_annotate cachegrind.out.521937
+Command:          ./gpt
+Events recorded:  Ir
+Events shown:     Ir
+Event sort order: Ir
+Threshold:        0.1%
+Annotation:       on
+
+--------------------------------------------------------------------------------
+-- Summary
+--------------------------------------------------------------------------------
+Ir_____________________ 
+
+11,831,392,759 (100.0%)  PROGRAM TOTALS
+
+--------------------------------------------------------------------------------
+-- File:function summary
+--------------------------------------------------------------------------------
+  Ir__________________________  file:function
+
+< 4,358,441,838 (36.8%, 36.8%)  ./stdlib/./stdlib/random_r.c:
+  4,358,435,626 (36.8%)           random_r
+
+< 3,584,272,916 (30.3%, 67.1%)  ./stdlib/./stdlib/random.c:
+  3,584,272,896 (30.3%)           random
+
+< 2,446,442,038 (20.7%, 87.8%)  /home/ap2447/lab5/gpt2.c:
+  2,261,437,884 (19.1%)           initialize_weights
+    175,975,414  (1.5%)           linear
+
+<   935,027,712  (7.9%, 95.7%)  ./stdlib/./stdlib/rand.c:rand
+
+<   313,159,970  (2.6%, 98.4%)  ???:
+    313,159,898  (2.6%)           ???
+
+<   106,970,304  (0.9%, 99.3%)  /usr/lib/gcc/x86_64-linux-gnu/13/include/fmaintrin.h:linear
+
+<    69,310,012  (0.6%, 99.8%)  ./malloc/./malloc/malloc.c:
+     21,901,608  (0.2%)           _int_malloc
+     13,252,152  (0.1%)           _int_free_merge_chunk
+
+--------------------------------------------------------------------------------
+-- Function:file summary
+--------------------------------------------------------------------------------
+  Ir__________________________  function:file
+
+> 4,358,435,626 (36.8%, 36.8%)  random_r:./stdlib/./stdlib/random_r.c
+
+> 3,584,272,896 (30.3%, 67.1%)  random:./stdlib/./stdlib/random.c
+
+> 2,261,437,889 (19.1%, 86.2%)  initialize_weights:
+  2,261,437,884 (19.1%)           /home/ap2447/lab5/gpt2.c
+
+>   935,027,712  (7.9%, 94.1%)  rand:./stdlib/./stdlib/rand.c
+
+>   313,159,898  (2.6%, 96.8%)  ???:???
+
+>   282,945,718  (2.4%, 99.2%)  linear:
+    175,975,414  (1.5%)           /home/ap2447/lab5/gpt2.c
+    106,970,304  (0.9%)           /usr/lib/gcc/x86_64-linux-gnu/13/include/fmaintrin.h
+
+>    21,901,608  (0.2%, 99.4%)  _int_malloc:./malloc/./malloc/malloc.c
+
+>    13,252,152  (0.1%, 99.5%)  _int_free_merge_chunk:./malloc/./malloc/malloc.c
+
+--------------------------------------------------------------------------------
+-- Annotated source file: ./malloc/./malloc/malloc.c
+--------------------------------------------------------------------------------
+Unannotated because one or more of these original files are unreadable:
+- ./malloc/./malloc/malloc.c
+
+--------------------------------------------------------------------------------
+-- Annotated source file: ./stdlib/./stdlib/rand.c
+--------------------------------------------------------------------------------
+Unannotated because one or more of these original files are unreadable:
+- ./stdlib/./stdlib/rand.c
+
+--------------------------------------------------------------------------------
+-- Annotated source file: ./stdlib/./stdlib/random.c
+--------------------------------------------------------------------------------
+Unannotated because one or more of these original files are unreadable:
+- ./stdlib/./stdlib/random.c
+
+--------------------------------------------------------------------------------
+-- Annotated source file: ./stdlib/./stdlib/random_r.c
+--------------------------------------------------------------------------------
+Unannotated because one or more of these original files are unreadable:
+- ./stdlib/./stdlib/random_r.c
+
+--------------------------------------------------------------------------------
+-- Annotated source file: /home/ap2447/lab5/gpt2.c
+--------------------------------------------------------------------------------
+Ir___________________ 
+
+-- line 76 ----------------------------------------
+            .          // }
+            .          
+            .          
+            .          
+            .          //MKL not installed on lab computers so cant use Blas
+            .          
+            .          
+            .          //AVX w/ fma
+        5,117  (0.0%)  float *linear(float *fcInput, float **weights, float *biases, int fcInputSize, int fcOutputSize) {
+        1,806  (0.0%)      float *output = (float *)malloc(fcOutputSize * sizeof(float));
+    1,261,808  (0.0%)      for (int i = 0; i < fcOutputSize; i++) {
+    1,256,691  (0.0%)          output[i] = biases[i];
+            .          
+            .                  int j = 0;
+    1,256,691  (0.0%)          __m256 sum = _mm256_setzero_ps();  //Set vec to 0
+            .                  // iterate by 8
+  161,295,959  (1.4%)          for (; j <= fcInputSize - 8; j += 8) {
+            .                      //load
+            .                      __m256 inputVec = _mm256_loadu_ps(&fcInput[j]);
+      837,794  (0.0%)              __m256 weightVec = _mm256_loadu_ps(&weights[i][j]);
+            .                      //fuse mul add
+            .                      sum = _mm256_fmadd_ps(inputVec, weightVec, sum);;
+            .                  }
+            .          
+            .                  float temp[8];
+            .                  _mm256_storeu_ps(temp, sum);
+            .                  float dotProduct = 0;
+            .                  for (int k = 0; k < 8; k++) {
+    8,380,649  (0.1%)              dotProduct += temp[k];
+            .                  }
+            .          
+            .                  // remainder
+      837,794  (0.0%)          for (; j < fcInputSize; j++) {
+          602  (0.0%)              dotProduct += fcInput[j] * weights[i][j];
+            .                  }
+      837,794  (0.0%)          output[i] += dotProduct;
+            .              }
+            .          
+            .              return output;
+        2,709  (0.0%)  }
+            .          
+            .          
+            .          
+            .          
+            .          
+            .          // Implement the scaled dot-product attention
+        2,736  (0.0%)  float **scaled_dot_product_attention(float **Q, float **K, float **V, int seqLength, int depth) {
+            .              // Compute Q * K^T
+        1,008  (0.0%)      float **scores = (float **)malloc(seqLength * sizeof(float *));
+        6,192  (0.0%)      for (int i = 0; i < seqLength; i++) {
+        7,488  (0.0%)          scores[i] = (float *)malloc(seqLength * sizeof(float));
+       15,120  (0.0%)          for (int j = 0; j < seqLength; j++) {
+            .                      float sum = 0.0;
+            .                      for (int k = 0; k < depth; k++) {
+      478,080  (0.0%)                  sum += Q[i][k] * K[j][k];
+            .                      }
+        7,200  (0.0%)              scores[i][j] = sum / sqrt(depth);
+            .                  }
+            .              }
+            .          
+            .              // Apply softmax to scores
+        1,296  (0.0%)      float **attention_weights = (float **)malloc(seqLength * sizeof(float *));
+       10,512  (0.0%)      for (int i = 0; i < seqLength; i++) {
+        6,480  (0.0%)          attention_weights[i] = (float *)malloc(seqLength * sizeof(float));
+          720  (0.0%)          float sum_exp = 0.0;
+       18,720  (0.0%)          for (int j = 0; j < seqLength; j++) {
+       21,600  (0.0%)              attention_weights[i][j] = exp(scores[i][j]);
+       10,800  (0.0%)              sum_exp += attention_weights[i][j];
+            .                  }
+            .                  // Normalize
+       10,080  (0.0%)          for (int j = 0; j < seqLength; j++) {
+       11,520  (0.0%)              attention_weights[i][j] /= sum_exp;
+            .                  }
+            .              }
+            .          
+            .              // Compute attention output
+        1,440  (0.0%)      float **output = (float **)malloc(seqLength * sizeof(float *));
+        8,064  (0.0%)      for (int i = 0; i < seqLength; i++) {
+        3,600  (0.0%)          output[i] = (float *)malloc(depth * sizeof(float));
+      187,200  (0.0%)          for (int k = 0; k < depth; k++) {
+      184,320  (0.0%)              output[i][k] = 0.0;
+      691,200  (0.0%)              for (int j = 0; j < seqLength; j++) {
+    1,155,600  (0.0%)                  output[i][k] += attention_weights[i][j] * V[j][k];
+            .                      }
+            .                  }
+            .              }
+            .          
+            .              // Free intermediate allocations
+        2,160  (0.0%)      for (int i = 0; i < seqLength; i++) {
+        1,440  (0.0%)          free(scores[i]);
+        2,160  (0.0%)          free(attention_weights[i]);
+            .              }
+          288  (0.0%)      free(scores);
+          288  (0.0%)      free(attention_weights);
+            .          
+            .              return output;
+        1,584  (0.0%)  }
+            .          
+            .          // Implement matrix addition
+          336  (0.0%)  float **matrix_add(float **x, float **y, int numRow, int numCol) {
+           96  (0.0%)      float **result = (float **)malloc(numRow * sizeof(float *));
+          552  (0.0%)      for (int i = 0; i < numRow; i++) {
+          600  (0.0%)          result[i] = (float *)malloc(numCol * sizeof(float));
+       35,160  (0.0%)          for (int j = 0; j < numCol; j++) {
+       36,240  (0.0%)              result[i][j] = x[i][j] + y[i][j];
+            .                  }
+            .              }
+            .              return result;
+          216  (0.0%)  }
+            .          
+            .          // Implement layer normalization
+          384  (0.0%)  float **norm(float **x, int seqLength, int features) {
+           48  (0.0%)      float **normalized = (float **)malloc(seqLength * sizeof(float *));
+        1,296  (0.0%)      for (int i = 0; i < seqLength; i++) {
+          720  (0.0%)          normalized[i] = (float *)malloc(features * sizeof(float));
+            .                  // Compute mean and variance
+          120  (0.0%)          float mean = 0.0;
+       23,160  (0.0%)          for (int j = 0; j < features; j++) {
+      104,640  (0.0%)              mean += x[i][j];
+            .                  }
+          120  (0.0%)          mean /= features;
+            .          
+          600  (0.0%)          float variance = 0.0;
+       23,280  (0.0%)          for (int j = 0; j < features; j++) {
+      218,880  (0.0%)              variance += (x[i][j] - mean) * (x[i][j] - mean);
+            .                  }
+          120  (0.0%)          variance /= features;
+            .          
+            .                  // Normalize
+      276,840  (0.0%)          for (int j = 0; j < features; j++) {
+      554,280  (0.0%)              normalized[i][j] = (x[i][j] - mean) / sqrt(variance + EPSILON);
+            .                  }
+            .              }
+            .              return normalized;
+          240  (0.0%)  }
+            .          
+            .          // Implement the GELU activation function
+          120  (0.0%)  float *gelu(float *x, int size) {
+          384  (0.0%)      float *output = (float *)malloc(size * sizeof(float));
+      738,180  (0.0%)      for (int i = 0; i < size; i++) {
+    2,396,160  (0.0%)          output[i] = 0.5 * x[i] * (1 + tanh(sqrt(2 / M_PI) * (x[i] + 0.044715 * x[i] * x[i] * x[i])));
+            .              }
+            .              return output;
+            .          }
+            .          
+            .          // Function to compute positions
+            .          int *positions_for(int *tokens, int seqLength, int past_length) {
+            4  (0.0%)      int *positions = (int *)malloc(seqLength * sizeof(int));
+           24  (0.0%)      for (int i = 0; i < seqLength; i++) {
+            7  (0.0%)          positions[i] = past_length + i;
+            .              }
+            .              return positions;
+            .          }
+            .          
+            .          // Implement the transformer block with multi-head attention
+           24  (0.0%)  float **block(float **x, int seqLength, int embeddingSize, BlockWeights weights) {
+            .              // Extract weights
+            .              LinearLayer q_mlp = weights.q_mlp;
+            .              LinearLayer k_mlp = weights.k_mlp;
+            .              LinearLayer v_mlp = weights.v_mlp;
+            .              LinearLayer first_block_MLP = weights.first_block_MLP;
+            .              LinearLayer second_block_MLP = weights.second_block_MLP;
+            .          
+            .              // Apply layer normalization to x
+           48  (0.0%)      float **normalized_x = norm(x, seqLength, embeddingSize);
+            .          
+            .              // Allocate memory for Q, K, V
+           60  (0.0%)      float **Q = (float **)malloc(seqLength * sizeof(float *));
+           36  (0.0%)      float **K = (float **)malloc(seqLength * sizeof(float *));
+           36  (0.0%)      float **V = (float **)malloc(seqLength * sizeof(float *));
+          672  (0.0%)      for (int i = 0; i < seqLength; i++) {
+          660  (0.0%)          Q[i] = linear(normalized_x[i], q_mlp.weights, q_mlp.biases, q_mlp.fcInputSize, q_mlp.fcOutputSize);
+          540  (0.0%)          K[i] = linear(normalized_x[i], k_mlp.weights, k_mlp.biases, k_mlp.fcInputSize, k_mlp.fcOutputSize);
+          540  (0.0%)          V[i] = linear(normalized_x[i], v_mlp.weights, v_mlp.biases, v_mlp.fcInputSize, v_mlp.fcOutputSize);
+            .              }
+            .          
+            .              // Reshape Q, K, V for multi-head attention
+            .              // Q_heads[NUM_HEADS][seqLength][HEAD_DIM]
+           48  (0.0%)      float ***Q_heads = (float ***)malloc(NUM_HEADS * sizeof(float **));
+           36  (0.0%)      float ***K_heads = (float ***)malloc(NUM_HEADS * sizeof(float **));
+           48  (0.0%)      float ***V_heads = (float ***)malloc(NUM_HEADS * sizeof(float **));
+          624  (0.0%)      for (int h = 0; h < NUM_HEADS; h++) {
+        1,008  (0.0%)          Q_heads[h] = (float **)malloc(seqLength * sizeof(float *));
+          720  (0.0%)          K_heads[h] = (float **)malloc(seqLength * sizeof(float *));
+          576  (0.0%)          V_heads[h] = (float **)malloc(seqLength * sizeof(float *));
+        7,488  (0.0%)          for (int i = 0; i < seqLength; i++) {
+        3,600  (0.0%)              Q_heads[h][i] = (float *)malloc(HEAD_DIM * sizeof(float));
+        3,600  (0.0%)              K_heads[h][i] = (float *)malloc(HEAD_DIM * sizeof(float));
+        2,880  (0.0%)              V_heads[h][i] = (float *)malloc(HEAD_DIM * sizeof(float));
+            .                      // Copy the corresponding slice from Q, K, V
+        2,160  (0.0%)              memcpy(Q_heads[h][i], &Q[i][h * HEAD_DIM], HEAD_DIM * sizeof(float));
+        1,440  (0.0%)              memcpy(K_heads[h][i], &K[i][h * HEAD_DIM], HEAD_DIM * sizeof(float));
+        2,160  (0.0%)              memcpy(V_heads[h][i], &V[i][h * HEAD_DIM], HEAD_DIM * sizeof(float));
+            .                  }
+            .              }
+            .          
+            .              // Apply attention on each head
+          108  (0.0%)      float ***head_outputs = (float ***)malloc(NUM_HEADS * sizeof(float **));
+            .          
+            .              // TODO: Implement multihead attention here
+            .              // Hint: it should only take around three lines of code
+          432  (0.0%)      for (int h = 0; h < NUM_HEADS; h++) {
+        1,008  (0.0%)          head_outputs[h] = scaled_dot_product_attention(Q_heads[h], K_heads[h], V_heads[h], seqLength, HEAD_DIM);
+            .              }
+            .          
+            .              // Concatenate the outputs from all heads
+           48  (0.0%)      float **a = (float **)malloc(seqLength * sizeof(float *));
+          564  (0.0%)      for (int i = 0; i < seqLength; i++) {
+          420  (0.0%)          a[i] = (float *)malloc(embeddingSize * sizeof(float));
+        2,940  (0.0%)          for (int h = 0; h < NUM_HEADS; h++) {
+        1,440  (0.0%)              memcpy(&a[i][h * HEAD_DIM], head_outputs[h][i], HEAD_DIM * sizeof(float));
+            .                  }
+            .              }
+            .          
+            .              // Add residual connection
+           72  (0.0%)      float **x_added = matrix_add(x, a, seqLength, embeddingSize);
+            .          
+            .              // Apply layer normalization
+           72  (0.0%)      float **normalized_x_added = norm(x_added, seqLength, embeddingSize);
+            .          
+            .              // Allocate memory for m
+           84  (0.0%)      float **m = (float **)malloc(seqLength * sizeof(float *));
+            .          
+          420  (0.0%)      for (int i = 0; i < seqLength; i++) {
+            .                  // TODO: Implement the two layer MLP here
+            .                  // Hint: it should only take around five lines of code
+            .                  // Hint: it should be first_block_MLP followed by gelu, and then second_block_MLP
+          540  (0.0%)          float *first_output = linear(normalized_x_added[i], first_block_MLP.weights, first_block_MLP.biases, first_block_MLP.fcInputSize, first_block_MLP.fcOutputSize);
+            .                  float *gelu_output = gelu(first_output, first_block_MLP.fcOutputSize);
+          600  (0.0%)          m[i] = linear(gelu_output, second_block_MLP.weights, second_block_MLP.biases, second_block_MLP.fcInputSize, second_block_MLP.fcOutputSize);
+          120  (0.0%)          free(first_output);
+          120  (0.0%)          free(gelu_output);
+            .              }
+            .          
+            .          
+            .              // Add residual connection
+          108  (0.0%)      float **output = matrix_add(x_added, m, seqLength, embeddingSize);
+            .          
+            .              // Free allocated memory
+          601  (0.0%)      for (int i = 0; i < seqLength; i++) {
+          180  (0.0%)          free(normalized_x[i]);
+          180  (0.0%)          free(Q[i]);
+          120  (0.0%)          free(K[i]);
+          120  (0.0%)          free(V[i]);
+          120  (0.0%)          free(normalized_x_added[i]);
+          180  (0.0%)          free(m[i]);
+          180  (0.0%)          free(x_added[i]);
+            .              }
+           24  (0.0%)      free(normalized_x);
+           24  (0.0%)      free(Q);
+           24  (0.0%)      free(K);
+           24  (0.0%)      free(V);
+           24  (0.0%)      free(normalized_x_added);
+           24  (0.0%)      free(m);
+           24  (0.0%)      free(x_added);
+            .          
+            .              // Free memory for heads
+        1,296  (0.0%)      for (int h = 0; h < NUM_HEADS; h++) {
+        6,624  (0.0%)          for (int i = 0; i < seqLength; i++) {
+        2,160  (0.0%)              free(Q_heads[h][i]);
+        2,160  (0.0%)              free(K_heads[h][i]);
+        2,160  (0.0%)              free(V_heads[h][i]);
+        2,160  (0.0%)              free(head_outputs[h][i]);
+            .                  }
+          576  (0.0%)          free(Q_heads[h]);
+          288  (0.0%)          free(K_heads[h]);
+          288  (0.0%)          free(V_heads[h]);
+          288  (0.0%)          free(head_outputs[h]);
+            .              }
+           24  (0.0%)      free(Q_heads);
+           24  (0.0%)      free(K_heads);
+           24  (0.0%)      free(V_heads);
+           24  (0.0%)      free(head_outputs);
+            .          
+            .              return output;
+            .          }
+            .          
+            .          // Implement the model function with positional embeddings
+           20  (0.0%)  float *model(int *tokens, int seqLength, GPT2Weights weights) {
+            .              // Compute positions
+            .              int past_length = 0; // Assuming no past tokens for simplicity
+            .              int *positions = positions_for(tokens, seqLength, past_length);
+            .          
+            .              // Initialize h with embeddings
+           12  (0.0%)      float **h = (float **)malloc(seqLength * sizeof(float *));
+           12  (0.0%)      for (int i = 0; i < seqLength; i++) {
+           25  (0.0%)          h[i] = (float *)malloc(EMBEDDING_SIZE * sizeof(float));
+            .                  // Get word embeddings and add positional embeddings
+        1,460  (0.0%)          for (int j = 0; j < EMBEDDING_SIZE; j++) {
+        1,551  (0.0%)              h[i][j] = weights.wte[tokens[i]][j] + weights.wpe[positions[i]][j];
+            .                  }
+            .              }
+            .          
+            .              // Free positions
+            2  (0.0%)      free(positions);
+            .          
+            .              // Pass through transformer blocks
+          110  (0.0%)      for (int i = 0; i < NUM_BLOCKS; i++) {
+           12  (0.0%)          float **new_h = block(h, seqLength, EMBEDDING_SIZE, weights.blocks[i]);
+            .                  // Free previous h
+          324  (0.0%)          for (int j = 0; j < seqLength; j++) {
+          180  (0.0%)              free(h[j]);
+            .                  }
+           24  (0.0%)          free(h);
+            .                  h = new_h;
+            .              }
+            .          
+            .              // Get logits for the last token
+            .              LinearLayer logits_mlp = weights.logits_mlp;
+           11  (0.0%)      float *logits = linear(h[seqLength - 1], logits_mlp.weights, logits_mlp.biases, logits_mlp.fcInputSize, logits_mlp.fcOutputSize);
+            .          
+            .              // Free h
+           25  (0.0%)      for (int i = 0; i < seqLength; i++) {
+           15  (0.0%)          free(h[i]);
+            .              }
+            2  (0.0%)      free(h);
+            .          
+            .              return logits;
+           11  (0.0%)  }
+            .          
+            1  (0.0%)  void initialize_linear_layer(LinearLayer *layer, int inputSize, int outputSize) {
+          168  (0.0%)      layer->fcInputSize = inputSize;
+            .              layer->fcOutputSize = outputSize;
+          256  (0.0%)      layer->weights = (float **)malloc(outputSize * sizeof(float *));
+          354  (0.0%)      layer->biases = (float *)malloc(outputSize * sizeof(float));
+      422,261  (0.0%)      for (int i = 0; i < outputSize; i++) {
+      569,668  (0.0%)          layer->weights[i] = (float *)malloc(inputSize * sizeof(float));
+      321,698  (0.0%)          layer->biases[i] = 0.0f; // Initialize biases to zero
+  349,436,160  (3.0%)          for (int j = 0; j < inputSize; j++) {
+1,358,852,352 (11.5%)              layer->weights[i][j] = ((float)rand() / RAND_MAX) * 0.02f - 0.01f; // Random weights between -0.01 and 0.01
+            .                  }
+            .              }
+            .          }
+            .          
+           12  (0.0%)  GPT2Weights initialize_weights() {
+            .              // Initialize GPT2Weights
+            .              GPT2Weights weights;
+            .          
+            .              // Initialize token embeddings (wte)
+            3  (0.0%)      weights.wte = (float **)malloc(VOCAB_SIZE * sizeof(float *));
+      150,774  (0.0%)      for (int i = 0; i < VOCAB_SIZE; i++) {
+      251,285  (0.0%)          weights.wte[i] = (float *)malloc(EMBEDDING_SIZE * sizeof(float));
+  115,842,385  (1.0%)          for (int j = 0; j < EMBEDDING_SIZE; j++) {
+  424,571,136  (3.6%)              weights.wte[i][j] = ((float)rand() / RAND_MAX) * 0.02f - 0.01f; // Random values between -0.01 and 0.01
+            .                  }
+            .              }
+            .          
+            .              // Initialize positional embeddings (wpe)
+            4  (0.0%)      weights.wpe = (float **)malloc(MAX_POSITION_EMBEDDINGS * sizeof(float *));
+        3,074  (0.0%)      for (int i = 0; i < MAX_POSITION_EMBEDDINGS; i++) {
+        5,120  (0.0%)          weights.wpe[i] = (float *)malloc(EMBEDDING_SIZE * sizeof(float));
+    2,360,320  (0.0%)          for (int j = 0; j < EMBEDDING_SIZE; j++) {
+    8,650,752  (0.1%)              weights.wpe[i][j] = ((float)rand() / RAND_MAX) * 0.02f - 0.01f;
+            .                  }
+            .              }
+            .          
+            5  (0.0%)      weights.blocks = (BlockWeights *)malloc(NUM_BLOCKS * sizeof(BlockWeights));
+           74  (0.0%)      for (int b = 0; b < NUM_BLOCKS; b++) {
+            .                  // Initialize Q, K, V linear layers using the helper function
+            .                  initialize_linear_layer(&weights.blocks[b].q_mlp, EMBEDDING_SIZE, EMBEDDING_SIZE);
+            .                  initialize_linear_layer(&weights.blocks[b].k_mlp, EMBEDDING_SIZE, EMBEDDING_SIZE);
+            .                  initialize_linear_layer(&weights.blocks[b].v_mlp, EMBEDDING_SIZE, EMBEDDING_SIZE);
+            .          
+            .                  // Initialize MLP layers
+            .                  int mlpHiddenSize = EMBEDDING_SIZE * 4; // MLP hidden size is typically 4x the embedding size
+            .                  initialize_linear_layer(&weights.blocks[b].first_block_MLP, EMBEDDING_SIZE, mlpHiddenSize);
+            .                  initialize_linear_layer(&weights.blocks[b].second_block_MLP, mlpHiddenSize, EMBEDDING_SIZE);
+            .              }
+            .          
+            .              // Initialize logits_mlp
+            .              initialize_linear_layer(&weights.logits_mlp, EMBEDDING_SIZE, VOCAB_SIZE);
+            .          
+            .              printf("GPT-2 Weights initialization complete.\n");
+           13  (0.0%)      return weights;
+            9  (0.0%)  }
+            .          
+            .          // Function to free a LinearLayer
+           75  (0.0%)  void free_linear_layer(LinearLayer *layer) {
+      620,448  (0.0%)      for (int i = 0; i < layer->fcOutputSize; i++) {
+      371,955  (0.0%)          free(layer->weights[i]);
+            .              }
+          122  (0.0%)      free(layer->weights);
+          267  (0.0%)      free(layer->biases);
+            .          }
+            .          
+            .          // Function to free GPT2Weights
+           15  (0.0%)  void free_weights(GPT2Weights *weights) {
+            .              // Free token embeddings
+      251,286  (0.0%)      for (int i = 0; i < VOCAB_SIZE; i++) {
+      150,771  (0.0%)          free(weights->wte[i]);
+            .              }
+            3  (0.0%)      free(weights->wte);
+            .          
+            .              // Free positional embeddings
+        5,123  (0.0%)      for (int i = 0; i < MAX_POSITION_EMBEDDINGS; i++) {
+        3,072  (0.0%)          free(weights->wpe[i]);
+            .              }
+           25  (0.0%)      free(weights->wpe);
+            .          
+            .              // Free transformer blocks
+           55  (0.0%)      for (int b = 0; b < NUM_BLOCKS; b++) {
+            .                  // Free Q, K, V linear layers
+           48  (0.0%)          free_linear_layer(&weights->blocks[b].q_mlp);
+           48  (0.0%)          free_linear_layer(&weights->blocks[b].k_mlp);
+           72  (0.0%)          free_linear_layer(&weights->blocks[b].v_mlp);
+            .          
+            .                  // Free MLP layers
+           72  (0.0%)          free_linear_layer(&weights->blocks[b].first_block_MLP);
+           84  (0.0%)          free_linear_layer(&weights->blocks[b].second_block_MLP);
+            .              }
+            3  (0.0%)      free(weights->blocks);
+            .          
+            .              // Free logits_mlp
+            .              free_linear_layer(&weights->logits_mlp);
+            8  (0.0%)  }
+            .          
+            .          // Test case
+           10  (0.0%)  int main() {
+            .              // Seed the random number generator
+            2  (0.0%)      srand(42);
+            .          
+            .              // Define sequence length and tokens
+            .              int seqLength = 5;
+            3  (0.0%)      int tokens[] = { 10, 20, 30, 40, 50 }; // Example token IDs
+            .          
+            6  (0.0%)      GPT2Weights weights = initialize_weights();
+            .              // Run the model
+           13  (0.0%)      float *logits = model(tokens, seqLength, weights);
+            .          
+            .              // Find the token with the highest logit value
+            2  (0.0%)      int max_index = 0;
+            4  (0.0%)      float max_value = logits[0];
+      150,774  (0.0%)      for (int i = 1; i < VOCAB_SIZE; i++) {
+      150,801  (0.0%)          if (logits[i] > max_value) {
+           11  (0.0%)              max_value = logits[i];
+            .                      max_index = i;
+            .                  }
+            .              }
+            .          
+            .              // It should be 26146
+            .              printf("Predicted next token ID: %d\n", max_index);
+            .          
+            3  (0.0%)      free(logits);
+            3  (0.0%)      free_weights(&weights);
+            .              return 0;
+           12  (0.0%)  }
+
+--------------------------------------------------------------------------------
+-- Annotated source file: /usr/lib/gcc/x86_64-linux-gnu/13/include/fmaintrin.h
+--------------------------------------------------------------------------------
+Ir________________ 
+
+-- line 57 ----------------------------------------
+          .           return (__m128)__builtin_ia32_vfmaddps ((__v4sf)__A, (__v4sf)__B,
+          .                                                   (__v4sf)__C);
+          .         }
+          .         
+          .         extern __inline __m256
+          .         __attribute__((__gnu_inline__, __always_inline__, __artificial__))
+          .         _mm256_fmadd_ps (__m256 __A, __m256 __B, __m256 __C)
+          .         {
+106,970,304 (0.9%)    return (__m256)__builtin_ia32_vfmaddps256 ((__v8sf)__A, (__v8sf)__B,
+          .                                                      (__v8sf)__C);
+          .         }
+          .         
+          .         extern __inline __m128d
+          .         __attribute__((__gnu_inline__, __always_inline__, __artificial__))
+          .         _mm_fmadd_sd (__m128d __A, __m128d __B, __m128d __C)
+          .         {
+          .           return (__m128d) __builtin_ia32_vfmaddsd3 ((__v2df)__A, (__v2df)__B,
+-- line 73 ----------------------------------------
+
+--------------------------------------------------------------------------------
+-- Annotation summary
+--------------------------------------------------------------------------------
+Ir___________________ 
+
+2,553,412,342 (21.6%)    annotated: files known & above threshold & readable, line numbers known
+            0            annotated: files known & above threshold & readable, line numbers unknown
+            0          unannotated: files known & above threshold & two or more non-identical
+8,947,052,478 (75.6%)  unannotated: files known & above threshold & unreadable 
+   17,767,969  (0.2%)  unannotated: files known & below threshold
+  313,159,970  (2.6%)  unannotated: files unknown
+

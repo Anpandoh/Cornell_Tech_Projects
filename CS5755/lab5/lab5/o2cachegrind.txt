@@ -1,0 +1,107 @@
+--------------------------------------------------------------------------------
+-- Metadata
+--------------------------------------------------------------------------------
+Invocation:       /usr/bin/cg_annotate cachegrind.out.520566
+Command:          ./gpt
+Events recorded:  Ir
+Events shown:     Ir
+Event sort order: Ir
+Threshold:        0.1%
+Annotation:       on
+
+--------------------------------------------------------------------------------
+-- Summary
+--------------------------------------------------------------------------------
+Ir_____________________ 
+
+14,396,276,707 (100.0%)  PROGRAM TOTALS
+
+--------------------------------------------------------------------------------
+-- File:function summary
+--------------------------------------------------------------------------------
+  Ir__________________________  file:function
+
+< 5,118,298,450 (35.6%, 35.6%)  /home/ap2447/gpt2.c:
+  3,000,629,223 (20.8%)           linear
+  1,632,468,140 (11.3%)           initialize_linear_layer
+    473,067,617  (3.3%)           initialize_weights
+
+< 4,358,441,838 (30.3%, 65.8%)  ./stdlib/./stdlib/random_r.c:
+  4,358,435,626 (30.3%)           random_r
+
+< 3,584,272,916 (24.9%, 90.7%)  ./stdlib/./stdlib/random.c:
+  3,584,272,896 (24.9%)           random
+
+<   935,027,712  (6.5%, 97.2%)  ./stdlib/./stdlib/rand.c:rand
+
+<   313,161,466  (2.2%, 99.4%)  ???:
+    313,161,394  (2.2%)           ???
+
+<    69,306,780  (0.5%, 99.9%)  ./malloc/./malloc/malloc.c:
+     21,894,842  (0.2%)           _int_malloc
+
+--------------------------------------------------------------------------------
+-- Function:file summary
+--------------------------------------------------------------------------------
+  Ir__________________________  function:file
+
+> 4,358,435,626 (30.3%, 30.3%)  random_r:./stdlib/./stdlib/random_r.c
+
+> 3,584,272,896 (24.9%, 55.2%)  random:./stdlib/./stdlib/random.c
+
+> 3,000,629,223 (20.8%, 76.0%)  linear:/home/ap2447/gpt2.c
+
+> 1,632,468,140 (11.3%, 87.4%)  initialize_linear_layer:/home/ap2447/gpt2.c
+
+>   935,027,712  (6.5%, 93.8%)  rand:./stdlib/./stdlib/rand.c
+
+>   473,067,620  (3.3%, 97.1%)  initialize_weights:
+    473,067,617  (3.3%)           /home/ap2447/gpt2.c
+
+>   313,164,274  (2.2%, 99.3%)  ???:
+    313,161,394  (2.2%)           ???
+
+>    21,894,842  (0.2%, 99.5%)  _int_malloc:./malloc/./malloc/malloc.c
+
+--------------------------------------------------------------------------------
+-- Annotated source file: ./malloc/./malloc/malloc.c
+--------------------------------------------------------------------------------
+Unannotated because one or more of these original files are unreadable:
+- ./malloc/./malloc/malloc.c
+
+--------------------------------------------------------------------------------
+-- Annotated source file: ./stdlib/./stdlib/rand.c
+--------------------------------------------------------------------------------
+Unannotated because one or more of these original files are unreadable:
+- ./stdlib/./stdlib/rand.c
+
+--------------------------------------------------------------------------------
+-- Annotated source file: ./stdlib/./stdlib/random.c
+--------------------------------------------------------------------------------
+Unannotated because one or more of these original files are unreadable:
+- ./stdlib/./stdlib/random.c
+
+--------------------------------------------------------------------------------
+-- Annotated source file: ./stdlib/./stdlib/random_r.c
+--------------------------------------------------------------------------------
+Unannotated because one or more of these original files are unreadable:
+- ./stdlib/./stdlib/random_r.c
+
+--------------------------------------------------------------------------------
+-- Annotated source file: /home/ap2447/gpt2.c
+--------------------------------------------------------------------------------
+Unannotated because one or more of these original files are unreadable:
+- /home/ap2447/gpt2.c
+
+--------------------------------------------------------------------------------
+-- Annotation summary
+--------------------------------------------------------------------------------
+Ir____________________ 
+
+             0            annotated: files known & above threshold & readable, line numbers known
+             0            annotated: files known & above threshold & readable, line numbers unknown
+             0          unannotated: files known & above threshold & two or more non-identical
+14,065,347,696 (97.7%)  unannotated: files known & above threshold & unreadable 
+    17,767,545  (0.1%)  unannotated: files known & below threshold
+   313,161,466  (2.2%)  unannotated: files unknown
+

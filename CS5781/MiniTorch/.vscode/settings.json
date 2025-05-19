@@ -1,0 +1,7 @@
+{
+    "python.testing.pytestArgs": [
+        "mod2-Anpandoh"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true
+}

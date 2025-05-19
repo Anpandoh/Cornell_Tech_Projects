@@ -1,0 +1,480 @@
+        -:    0:Source:gpt2.c
+        -:    0:Graph:gpt2.gcno
+        -:    0:Data:gpt2.gcda
+        -:    0:Runs:1
+        -:    1:#include <stdio.h>
+        -:    2:#include <stdlib.h>
+        -:    3:#include <math.h>
+        -:    4:#include <string.h>
+        -:    5:#include <time.h>
+        -:    6:
+        -:    7:#define EPSILON 1e-5
+        -:    8:#define EMBEDDING_SIZE 768   // GPT-2 base model embedding size
+        -:    9:#define NUM_BLOCKS 12        // Number of transformer blocks in GPT-2 base model
+        -:   10:#define NUM_HEADS 12         // Number of attention heads
+        -:   11:#define HEAD_DIM (EMBEDDING_SIZE / NUM_HEADS) // Dimension of each attention head
+        -:   12:#define VOCAB_SIZE 50257     // GPT-2 vocabulary size
+        -:   13:#define MAX_POSITION_EMBEDDINGS 1024 // Maximum sequence length
+        -:   14:
+        -:   15:// Assuming MatmulType is defined elsewhere
+        -:   16:typedef enum { MATMUL_STANDARD, MATMUL_THREADED } MatmulType;
+        -:   17:
+        -:   18:// Define the necessary data structures
+        -:   19:typedef struct {
+        -:   20:    int batch_size;
+        -:   21:    int sequence_length;
+        -:   22:    int features;
+        -:   23:    float *data; // data[batch_size * sequence_length * features]
+        -:   24:} Tensor3D;
+        -:   25:
+        -:   26:typedef struct {
+        -:   27:    int rows;
+        -:   28:    int cols;
+        -:   29:    float *data; // data[rows * cols]
+        -:   30:} Tensor2D;
+        -:   31:
+        -:   32:typedef struct {
+        -:   33:    float **weights; // weights[fcOutputSize][fcInputSize]
+        -:   34:    float *biases;   // biases[fcOutputSize]
+        -:   35:    int fcInputSize;
+        -:   36:    int fcOutputSize;
+        -:   37:} LinearLayer;
+        -:   38:
+        -:   39:typedef struct {
+        -:   40:    LinearLayer q_mlp;
+        -:   41:    LinearLayer k_mlp;
+        -:   42:    LinearLayer v_mlp;
+        -:   43:    LinearLayer first_block_MLP;
+        -:   44:    LinearLayer second_block_MLP;
+        -:   45:} BlockWeights;
+        -:   46:
+        -:   47:typedef struct {
+        -:   48:    float **wpe;         // Positional embeddings
+        -:   49:    float **wte;         // Token embeddings
+        -:   50:    BlockWeights *blocks;
+        -:   51:    LinearLayer logits_mlp;
+        -:   52:} GPT2Weights;
+        -:   53:
+        -:   54:// Function prototypes
+        -:   55:float *linear(float *fcInput, float **weights, float *biases, int fcInputSize, int fcOutputSize);
+        -:   56:float **scaled_dot_product_attention(float **Q, float **K, float **V, int seqLength, int depth);
+        -:   57:float **matrix_add(float **x, float **y, int numRow, int numCol);
+        -:   58:float **norm(float **x, int seqLength, int features);
+        -:   59:float *gelu(float *x, int size);
+        -:   60:float **block(float **x, int seqLength, int embeddingSize, BlockWeights weights);
+        -:   61:float *model(int *tokens, int seqLength, GPT2Weights weights);
+        -:   62:int *positions_for(int *tokens, int seqLength, int past_length);
+        -:   63:
+        -:   64:// Implement the linear layer function
+      301:   65:float *linear(float *fcInput, float **weights, float *biases, int fcInputSize, int fcOutputSize) {
+      301:   66:    float *output = (float *)malloc(fcOutputSize * sizeof(float));
+   419198:   67:    for (int i = 0; i < fcOutputSize; i++) {
+   418897:   68:        output[i] = biases[i];
+428300113:   69:        for (int j = 0; j < fcInputSize; j++) {
+427881216:   70:            output[i] += fcInput[j] * weights[i][j];
+        -:   71:        }
+        -:   72:    }
+      301:   73:    return output;
+        -:   74:}
+        -:   75:
+        -:   76:// Implement the scaled dot-product attention
+      144:   77:float **scaled_dot_product_attention(float **Q, float **K, float **V, int seqLength, int depth) {
+        -:   78:    // Compute Q * K^T
+      144:   79:    float **scores = (float **)malloc(seqLength * sizeof(float *));
+      864:   80:    for (int i = 0; i < seqLength; i++) {
+      720:   81:        scores[i] = (float *)malloc(seqLength * sizeof(float));
+     4320:   82:        for (int j = 0; j < seqLength; j++) {
+        -:   83:            float sum = 0.0;
+   234000:   84:            for (int k = 0; k < depth; k++) {
+   230400:   85:                sum += Q[i][k] * K[j][k];
+        -:   86:            }
+     3600:   87:            scores[i][j] = sum / sqrt(depth);
+        -:   88:        }
+        -:   89:    }
+        -:   90:
+        -:   91:    // Apply softmax to scores
+      144:   92:    float **attention_weights = (float **)malloc(seqLength * sizeof(float *));
+      864:   93:    for (int i = 0; i < seqLength; i++) {
+      720:   94:        attention_weights[i] = (float *)malloc(seqLength * sizeof(float));
+      720:   95:        float sum_exp = 0.0;
+     4320:   96:        for (int j = 0; j < seqLength; j++) {
+     3600:   97:            attention_weights[i][j] = exp(scores[i][j]);
+     3600:   98:            sum_exp += attention_weights[i][j];
+        -:   99:        }
+        -:  100:        // Normalize
+     4320:  101:        for (int j = 0; j < seqLength; j++) {
+     3600:  102:            attention_weights[i][j] /= sum_exp;
+        -:  103:        }
+        -:  104:    }
+        -:  105:
+        -:  106:    // Compute attention output
+      144:  107:    float **output = (float **)malloc(seqLength * sizeof(float *));
+      864:  108:    for (int i = 0; i < seqLength; i++) {
+      720:  109:        output[i] = (float *)malloc(depth * sizeof(float));
+    46800:  110:        for (int k = 0; k < depth; k++) {
+    46080:  111:            output[i][k] = 0.0;
+   276480:  112:            for (int j = 0; j < seqLength; j++) {
+   230400:  113:                output[i][k] += attention_weights[i][j] * V[j][k];
+        -:  114:            }
+        -:  115:        }
+        -:  116:    }
+        -:  117:
+        -:  118:    // Free intermediate allocations
+      864:  119:    for (int i = 0; i < seqLength; i++) {
+      720:  120:        free(scores[i]);
+      720:  121:        free(attention_weights[i]);
+        -:  122:    }
+      144:  123:    free(scores);
+      144:  124:    free(attention_weights);
+        -:  125:
+      144:  126:    return output;
+        -:  127:}
+        -:  128:
+        -:  129:// Implement matrix addition
+       24:  130:float **matrix_add(float **x, float **y, int numRow, int numCol) {
+       24:  131:    float **result = (float **)malloc(numRow * sizeof(float *));
+      144:  132:    for (int i = 0; i < numRow; i++) {
+      120:  133:        result[i] = (float *)malloc(numCol * sizeof(float));
+    92280:  134:        for (int j = 0; j < numCol; j++) {
+    92160:  135:            result[i][j] = x[i][j] + y[i][j];
+        -:  136:        }
+        -:  137:    }
+       24:  138:    return result;
+        -:  139:}
+        -:  140:
+        -:  141:// Implement layer normalization
+       24:  142:float **norm(float **x, int seqLength, int features) {
+       24:  143:    float **normalized = (float **)malloc(seqLength * sizeof(float *));
+      144:  144:    for (int i = 0; i < seqLength; i++) {
+      120:  145:        normalized[i] = (float *)malloc(features * sizeof(float));
+        -:  146:        // Compute mean and variance
+      120:  147:        float mean = 0.0;
+    92280:  148:        for (int j = 0; j < features; j++) {
+    92160:  149:            mean += x[i][j];
+        -:  150:        }
+      120:  151:        mean /= features;
+        -:  152:
+      120:  153:        float variance = 0.0;
+    92280:  154:        for (int j = 0; j < features; j++) {
+    92160:  155:            variance += (x[i][j] - mean) * (x[i][j] - mean);
+        -:  156:        }
+      120:  157:        variance /= features;
+        -:  158:
+        -:  159:        // Normalize
+    92280:  160:        for (int j = 0; j < features; j++) {
+    92160:  161:            normalized[i][j] = (x[i][j] - mean) / sqrt(variance + EPSILON);
+        -:  162:        }
+        -:  163:    }
+       24:  164:    return normalized;
+        -:  165:}
+        -:  166:
+        -:  167:// Implement the GELU activation function
+       60:  168:float *gelu(float *x, int size) {
+       60:  169:    float *output = (float *)malloc(size * sizeof(float));
+   184380:  170:    for (int i = 0; i < size; i++) {
+   184320:  171:        output[i] = 0.5 * x[i] * (1 + tanh(sqrt(2 / M_PI) * (x[i] + 0.044715 * x[i] * x[i] * x[i])));
+        -:  172:    }
+       60:  173:    return output;
+        -:  174:}
+        -:  175:
+        -:  176:// Function to compute positions
+       1*:  177:int *positions_for(int *tokens, int seqLength, int past_length) {
+       1*:  178:    int *positions = (int *)malloc(seqLength * sizeof(int));
+       6*:  179:    for (int i = 0; i < seqLength; i++) {
+       5*:  180:        positions[i] = past_length + i;
+        -:  181:    }
+       1*:  182:    return positions;
+        -:  183:}
+        -:  184:
+        -:  185:// Implement the transformer block with multi-head attention
+       12:  186:float **block(float **x, int seqLength, int embeddingSize, BlockWeights weights) {
+        -:  187:    // Extract weights
+       12:  188:    LinearLayer q_mlp = weights.q_mlp;
+       12:  189:    LinearLayer k_mlp = weights.k_mlp;
+       12:  190:    LinearLayer v_mlp = weights.v_mlp;
+       12:  191:    LinearLayer first_block_MLP = weights.first_block_MLP;
+       12:  192:    LinearLayer second_block_MLP = weights.second_block_MLP;
+        -:  193:
+        -:  194:    // Apply layer normalization to x
+       12:  195:    float **normalized_x = norm(x, seqLength, embeddingSize);
+        -:  196:
+        -:  197:    // Allocate memory for Q, K, V
+       12:  198:    float **Q = (float **)malloc(seqLength * sizeof(float *));
+       12:  199:    float **K = (float **)malloc(seqLength * sizeof(float *));
+       12:  200:    float **V = (float **)malloc(seqLength * sizeof(float *));
+       72:  201:    for (int i = 0; i < seqLength; i++) {
+       60:  202:        Q[i] = linear(normalized_x[i], q_mlp.weights, q_mlp.biases, q_mlp.fcInputSize, q_mlp.fcOutputSize);
+       60:  203:        K[i] = linear(normalized_x[i], k_mlp.weights, k_mlp.biases, k_mlp.fcInputSize, k_mlp.fcOutputSize);
+       60:  204:        V[i] = linear(normalized_x[i], v_mlp.weights, v_mlp.biases, v_mlp.fcInputSize, v_mlp.fcOutputSize);
+        -:  205:    }
+        -:  206:
+        -:  207:    // Reshape Q, K, V for multi-head attention
+        -:  208:    // Q_heads[NUM_HEADS][seqLength][HEAD_DIM]
+       12:  209:    float ***Q_heads = (float ***)malloc(NUM_HEADS * sizeof(float **));
+       12:  210:    float ***K_heads = (float ***)malloc(NUM_HEADS * sizeof(float **));
+       12:  211:    float ***V_heads = (float ***)malloc(NUM_HEADS * sizeof(float **));
+      156:  212:    for (int h = 0; h < NUM_HEADS; h++) {
+      144:  213:        Q_heads[h] = (float **)malloc(seqLength * sizeof(float *));
+      144:  214:        K_heads[h] = (float **)malloc(seqLength * sizeof(float *));
+      144:  215:        V_heads[h] = (float **)malloc(seqLength * sizeof(float *));
+      864:  216:        for (int i = 0; i < seqLength; i++) {
+      720:  217:            Q_heads[h][i] = (float *)malloc(HEAD_DIM * sizeof(float));
+      720:  218:            K_heads[h][i] = (float *)malloc(HEAD_DIM * sizeof(float));
+      720:  219:            V_heads[h][i] = (float *)malloc(HEAD_DIM * sizeof(float));
+        -:  220:            // Copy the corresponding slice from Q, K, V
+      720:  221:            memcpy(Q_heads[h][i], &Q[i][h * HEAD_DIM], HEAD_DIM * sizeof(float));
+      720:  222:            memcpy(K_heads[h][i], &K[i][h * HEAD_DIM], HEAD_DIM * sizeof(float));
+      720:  223:            memcpy(V_heads[h][i], &V[i][h * HEAD_DIM], HEAD_DIM * sizeof(float));
+        -:  224:        }
+        -:  225:    }
+        -:  226:
+        -:  227:    // Apply attention on each head
+       12:  228:    float ***head_outputs = (float ***)malloc(NUM_HEADS * sizeof(float **));
+        -:  229:
+        -:  230:    // TODO: Implement multihead attention here
+        -:  231:    // Hint: it should only take around three lines of code
+      156:  232:    for (int h = 0; h < NUM_HEADS; h++) {
+      144:  233:        head_outputs[h] = scaled_dot_product_attention(Q_heads[h], K_heads[h], V_heads[h], seqLength, HEAD_DIM);
+        -:  234:    }
+        -:  235:
+        -:  236:    // Concatenate the outputs from all heads
+       12:  237:    float **a = (float **)malloc(seqLength * sizeof(float *));
+       72:  238:    for (int i = 0; i < seqLength; i++) {
+       60:  239:        a[i] = (float *)malloc(embeddingSize * sizeof(float));
+      780:  240:        for (int h = 0; h < NUM_HEADS; h++) {
+      720:  241:            memcpy(&a[i][h * HEAD_DIM], head_outputs[h][i], HEAD_DIM * sizeof(float));
+        -:  242:        }
+        -:  243:    }
+        -:  244:
+        -:  245:    // Add residual connection
+       12:  246:    float **x_added = matrix_add(x, a, seqLength, embeddingSize);
+        -:  247:
+        -:  248:    // Apply layer normalization
+       12:  249:    float **normalized_x_added = norm(x_added, seqLength, embeddingSize);
+        -:  250:
+        -:  251:    // Allocate memory for m
+       12:  252:    float **m = (float **)malloc(seqLength * sizeof(float *));
+        -:  253:
+       72:  254:    for (int i = 0; i < seqLength; i++) {
+        -:  255:        // TODO: Implement the two layer MLP here
+        -:  256:        // Hint: it should only take around five lines of code
+        -:  257:        // Hint: it should be first_block_MLP followed by gelu, and then second_block_MLP
+       60:  258:        float *first_output = linear(normalized_x_added[i], first_block_MLP.weights, first_block_MLP.biases, first_block_MLP.fcInputSize, first_block_MLP.fcOutputSize);
+       60:  259:        float *gelu_output = gelu(first_output, first_block_MLP.fcOutputSize);
+       60:  260:        m[i] = linear(gelu_output, second_block_MLP.weights, second_block_MLP.biases, second_block_MLP.fcInputSize, second_block_MLP.fcOutputSize);
+       60:  261:        free(first_output);
+       60:  262:        free(gelu_output);
+        -:  263:    }
+        -:  264:
+        -:  265:
+        -:  266:    // Add residual connection
+       12:  267:    float **output = matrix_add(x_added, m, seqLength, embeddingSize);
+        -:  268:
+        -:  269:    // Free allocated memory
+       72:  270:    for (int i = 0; i < seqLength; i++) {
+       60:  271:        free(normalized_x[i]);
+       60:  272:        free(Q[i]);
+       60:  273:        free(K[i]);
+       60:  274:        free(V[i]);
+       60:  275:        free(normalized_x_added[i]);
+       60:  276:        free(m[i]);
+       60:  277:        free(x_added[i]);
+        -:  278:    }
+       12:  279:    free(normalized_x);
+       12:  280:    free(Q);
+       12:  281:    free(K);
+       12:  282:    free(V);
+       12:  283:    free(normalized_x_added);
+       12:  284:    free(m);
+       12:  285:    free(x_added);
+        -:  286:
+        -:  287:    // Free memory for heads
+      156:  288:    for (int h = 0; h < NUM_HEADS; h++) {
+      864:  289:        for (int i = 0; i < seqLength; i++) {
+      720:  290:            free(Q_heads[h][i]);
+      720:  291:            free(K_heads[h][i]);
+      720:  292:            free(V_heads[h][i]);
+      720:  293:            free(head_outputs[h][i]);
+        -:  294:        }
+      144:  295:        free(Q_heads[h]);
+      144:  296:        free(K_heads[h]);
+      144:  297:        free(V_heads[h]);
+      144:  298:        free(head_outputs[h]);
+        -:  299:    }
+       12:  300:    free(Q_heads);
+       12:  301:    free(K_heads);
+       12:  302:    free(V_heads);
+       12:  303:    free(head_outputs);
+        -:  304:
+       12:  305:    return output;
+        -:  306:}
+        -:  307:
+        -:  308:// Implement the model function with positional embeddings
+        1:  309:float *model(int *tokens, int seqLength, GPT2Weights weights) {
+        -:  310:    // Compute positions
+        1:  311:    int past_length = 0; // Assuming no past tokens for simplicity
+        1:  312:    int *positions = positions_for(tokens, seqLength, past_length);
+        -:  313:
+        -:  314:    // Initialize h with embeddings
+        1:  315:    float **h = (float **)malloc(seqLength * sizeof(float *));
+        6:  316:    for (int i = 0; i < seqLength; i++) {
+        5:  317:        h[i] = (float *)malloc(EMBEDDING_SIZE * sizeof(float));
+        -:  318:        // Get word embeddings and add positional embeddings
+     3845:  319:        for (int j = 0; j < EMBEDDING_SIZE; j++) {
+     3840:  320:            h[i][j] = weights.wte[tokens[i]][j] + weights.wpe[positions[i]][j];
+        -:  321:        }
+        -:  322:    }
+        -:  323:
+        -:  324:    // Free positions
+        1:  325:    free(positions);
+        -:  326:
+        -:  327:    // Pass through transformer blocks
+       13:  328:    for (int i = 0; i < NUM_BLOCKS; i++) {
+       12:  329:        float **new_h = block(h, seqLength, EMBEDDING_SIZE, weights.blocks[i]);
+        -:  330:        // Free previous h
+       72:  331:        for (int j = 0; j < seqLength; j++) {
+       60:  332:            free(h[j]);
+        -:  333:        }
+       12:  334:        free(h);
+       12:  335:        h = new_h;
+        -:  336:    }
+        -:  337:
+        -:  338:    // Get logits for the last token
+        1:  339:    LinearLayer logits_mlp = weights.logits_mlp;
+        1:  340:    float *logits = linear(h[seqLength - 1], logits_mlp.weights, logits_mlp.biases, logits_mlp.fcInputSize, logits_mlp.fcOutputSize);
+        -:  341:
+        -:  342:    // Free h
+        6:  343:    for (int i = 0; i < seqLength; i++) {
+        5:  344:        free(h[i]);
+        -:  345:    }
+        1:  346:    free(h);
+        -:  347:
+        1:  348:    return logits;
+        -:  349:}
+        -:  350:
+       61:  351:void initialize_linear_layer(LinearLayer *layer, int inputSize, int outputSize) {
+       61:  352:    layer->fcInputSize = inputSize;
+       61:  353:    layer->fcOutputSize = outputSize;
+       61:  354:    layer->weights = (float **)malloc(outputSize * sizeof(float *));
+       61:  355:    layer->biases = (float *)malloc(outputSize * sizeof(float));
+   124046:  356:    for (int i = 0; i < outputSize; i++) {
+   123985:  357:        layer->weights[i] = (float *)malloc(inputSize * sizeof(float));
+   123985:  358:        layer->biases[i] = 0.0f; // Initialize biases to zero
+116578129:  359:        for (int j = 0; j < inputSize; j++) {
+116454144:  360:            layer->weights[i][j] = ((float)rand() / RAND_MAX) * 0.02f - 0.01f; // Random weights between -0.01 and 0.01
+        -:  361:        }
+        -:  362:    }
+       61:  363:}
+        -:  364:
+        1:  365:GPT2Weights initialize_weights() {
+        -:  366:    // Initialize GPT2Weights
+        1:  367:    GPT2Weights weights;
+        -:  368:
+        -:  369:    // Initialize token embeddings (wte)
+        1:  370:    weights.wte = (float **)malloc(VOCAB_SIZE * sizeof(float *));
+    50258:  371:    for (int i = 0; i < VOCAB_SIZE; i++) {
+    50257:  372:        weights.wte[i] = (float *)malloc(EMBEDDING_SIZE * sizeof(float));
+ 38647633:  373:        for (int j = 0; j < EMBEDDING_SIZE; j++) {
+ 38597376:  374:            weights.wte[i][j] = ((float)rand() / RAND_MAX) * 0.02f - 0.01f; // Random values between -0.01 and 0.01
+        -:  375:        }
+        -:  376:    }
+        -:  377:
+        -:  378:    // Initialize positional embeddings (wpe)
+        1:  379:    weights.wpe = (float **)malloc(MAX_POSITION_EMBEDDINGS * sizeof(float *));
+     1025:  380:    for (int i = 0; i < MAX_POSITION_EMBEDDINGS; i++) {
+     1024:  381:        weights.wpe[i] = (float *)malloc(EMBEDDING_SIZE * sizeof(float));
+   787456:  382:        for (int j = 0; j < EMBEDDING_SIZE; j++) {
+   786432:  383:            weights.wpe[i][j] = ((float)rand() / RAND_MAX) * 0.02f - 0.01f;
+        -:  384:        }
+        -:  385:    }
+        -:  386:
+        1:  387:    weights.blocks = (BlockWeights *)malloc(NUM_BLOCKS * sizeof(BlockWeights));
+       13:  388:    for (int b = 0; b < NUM_BLOCKS; b++) {
+        -:  389:        // Initialize Q, K, V linear layers using the helper function
+       12:  390:        initialize_linear_layer(&weights.blocks[b].q_mlp, EMBEDDING_SIZE, EMBEDDING_SIZE);
+       12:  391:        initialize_linear_layer(&weights.blocks[b].k_mlp, EMBEDDING_SIZE, EMBEDDING_SIZE);
+       12:  392:        initialize_linear_layer(&weights.blocks[b].v_mlp, EMBEDDING_SIZE, EMBEDDING_SIZE);
+        -:  393:
+        -:  394:        // Initialize MLP layers
+       12:  395:        int mlpHiddenSize = EMBEDDING_SIZE * 4; // MLP hidden size is typically 4x the embedding size
+       12:  396:        initialize_linear_layer(&weights.blocks[b].first_block_MLP, EMBEDDING_SIZE, mlpHiddenSize);
+       12:  397:        initialize_linear_layer(&weights.blocks[b].second_block_MLP, mlpHiddenSize, EMBEDDING_SIZE);
+        -:  398:    }
+        -:  399:
+        -:  400:    // Initialize logits_mlp
+        1:  401:    initialize_linear_layer(&weights.logits_mlp, EMBEDDING_SIZE, VOCAB_SIZE);
+        -:  402:
+        1:  403:    printf("GPT-2 Weights initialization complete.\n");
+        1:  404:    return weights;
+        -:  405:}
+        -:  406:
+        -:  407:// Function to free a LinearLayer
+       61:  408:void free_linear_layer(LinearLayer *layer) {
+   124046:  409:    for (int i = 0; i < layer->fcOutputSize; i++) {
+   123985:  410:        free(layer->weights[i]);
+        -:  411:    }
+       61:  412:    free(layer->weights);
+       61:  413:    free(layer->biases);
+       61:  414:}
+        -:  415:
+        -:  416:// Function to free GPT2Weights
+        1:  417:void free_weights(GPT2Weights *weights) {
+        -:  418:    // Free token embeddings
+    50258:  419:    for (int i = 0; i < VOCAB_SIZE; i++) {
+    50257:  420:        free(weights->wte[i]);
+        -:  421:    }
+        1:  422:    free(weights->wte);
+        -:  423:
+        -:  424:    // Free positional embeddings
+     1025:  425:    for (int i = 0; i < MAX_POSITION_EMBEDDINGS; i++) {
+     1024:  426:        free(weights->wpe[i]);
+        -:  427:    }
+        1:  428:    free(weights->wpe);
+        -:  429:
+        -:  430:    // Free transformer blocks
+       13:  431:    for (int b = 0; b < NUM_BLOCKS; b++) {
+        -:  432:        // Free Q, K, V linear layers
+       12:  433:        free_linear_layer(&weights->blocks[b].q_mlp);
+       12:  434:        free_linear_layer(&weights->blocks[b].k_mlp);
+       12:  435:        free_linear_layer(&weights->blocks[b].v_mlp);
+        -:  436:
+        -:  437:        // Free MLP layers
+       12:  438:        free_linear_layer(&weights->blocks[b].first_block_MLP);
+       12:  439:        free_linear_layer(&weights->blocks[b].second_block_MLP);
+        -:  440:    }
+        1:  441:    free(weights->blocks);
+        -:  442:
+        -:  443:    // Free logits_mlp
+        1:  444:    free_linear_layer(&weights->logits_mlp);
+        1:  445:}
+        -:  446:
+        -:  447:// Test case
+        1:  448:int main() {
+        -:  449:    // Seed the random number generator
+        1:  450:    srand(42);
+        -:  451:
+        -:  452:    // Define sequence length and tokens
+        1:  453:    int seqLength = 5;
+        1:  454:    int tokens[] = { 10, 20, 30, 40, 50 }; // Example token IDs
+        -:  455:
+        1:  456:    GPT2Weights weights = initialize_weights();
+        -:  457:    // Run the model
+        1:  458:    float *logits = model(tokens, seqLength, weights);
+        -:  459:
+        -:  460:    // Find the token with the highest logit value
+        1:  461:    int max_index = 0;
+        1:  462:    float max_value = logits[0];
+    50257:  463:    for (int i = 1; i < VOCAB_SIZE; i++) {
+    50256:  464:        if (logits[i] > max_value) {
+       11:  465:            max_value = logits[i];
+       11:  466:            max_index = i;
+        -:  467:        }
+        -:  468:    }
+        -:  469:
+        -:  470:    // It should be 26146
+        1:  471:    printf("Predicted next token ID: %d\n", max_index);
+        -:  472:
+        1:  473:    free(logits);
+        1:  474:    free_weights(&weights);
+        1:  475:    return 0;
+        -:  476:}
