@@ -1,4 +1,4 @@
-# MiniTorch Recreation
+# MiniTorch
 
 This repository contains my implementation of the [MiniTorch](https://minitorch.github.io/) project — a pedagogical re-creation of the core components of PyTorch. MiniTorch is designed as a teaching framework to help understand how deep learning libraries like PyTorch work under the hood.
 
